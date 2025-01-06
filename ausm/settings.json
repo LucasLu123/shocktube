@@ -1,12 +1,12 @@
 {
     "Configuration_to_run":1,
-    "ncells":400,
+    "ncells":200,
     "xmax":1.0,
     "Configurations":[
         {
             "id":1,
             "name":"Sod_Problem",
-            "CFL":0.5,
+            "CFL":0.2,
             "gamma":1.4,
             "tmax":0.2,
             "left":{

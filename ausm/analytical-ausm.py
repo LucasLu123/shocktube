@@ -2,7 +2,7 @@ import os
 import numpy as np
 import json 
 import matplotlib.pyplot as plt
-from ausm import flux_ausm
+from ausm import flux_ausm,flux_ausm_np,flux_ausm_torch
 from matplotlib import rc
 from pathlib import Path
 rc('font', family='serif')
@@ -77,7 +77,7 @@ def update_RK4(q:np.ndarray,dt:float,dx:float,ng:int,gamma:float=1.4) -> np.ndar
     qnew[:,(nx-ng):] = q[:,(nx-ng):] # set ghost cell qnew back to initial conditions
     return qnew
 
-with open('settings.json','r') as f:
+with open('/home/users/lul/WCNSGPU/shocktube/ausm/settings.json','r') as f:
     settings = json.load(f)
     config = [c for c in settings['Configurations'] if c['id'] == settings['Configuration_to_run']][0]
 
@@ -85,7 +85,7 @@ with open('settings.json','r') as f:
 CFL    = config['CFL']               # Courant Number
 gamma  = config['gamma']             # Ratio of specific heats
 ncells = settings['ncells']          # Number of cells
-x_ini =0.; x_fin = 1.       # Limits of computational domain
+x_ini =-1.; x_fin = 1.       # Limits of computational domain
 dx = (x_fin-x_ini)/ncells   # Step size
 nghost_cells = 1            # Number of ghost cells on each boundary
 x = np.arange(x_ini-dx*nghost_cells, x_fin+2*dx*nghost_cells, dx) # Mesh
@@ -113,7 +113,7 @@ dt=CFL*dx/max(abs(u0)+a0)         # Using the system's largest eigenvalue
 
 while t < tEnd:
     q0 = q.copy()
-    F_half = flux_ausm(q0,gamma) # Calculates the flux at every 1/2 point
+    F_half = flux_ausm_torch(q0,gamma) # Calculates the flux at every 1/2 point
 
     q = update_euler(q0,F_half,dx,dt,nghost_cells)
     # q = update_RK4(q,dt,dx,nghost_cells,gamma)
@@ -133,38 +133,75 @@ while t < tEnd:
     t=t+dt; it=it+1
       
     # Plot solution
-    if it%2 == 0:
-        fig,axes = plt.subplots(nrows=4, ncols=1, num=1, figsize=(10, 8), clear=True)
-        fig.suptitle('AUSM Scheme')
+    #if t == tEnd:
+# fig,axes = plt.subplots(nrows=4, ncols=1, num=1, figsize=(10, 8), clear=True)
+# fig.suptitle('AUSM Scheme')
+# plt.subplot(4, 1, 1)
+# #plt.title('Roe scheme')
+# plt.plot(x, rho, 'k-')
+# plt.ylabel('$rho$',fontsize=16)
+# plt.tick_params(axis='x',bottom=False,labelbottom=False)
+# plt.grid(True)
+# plt.subplot(4, 1, 2)
+# plt.plot(x, u, 'r-')
+# plt.ylabel('$U$',fontsize=16)
+# plt.tick_params(axis='x',bottom=False,labelbottom=False)
+# plt.grid(True)
+# plt.subplot(4, 1, 3)
+# plt.plot(x, p, 'b-')
+# plt.ylabel('$p$',fontsize=16)
+# plt.tick_params(axis='x',bottom=False,labelbottom=False)
+# plt.grid(True)
+# plt.subplot(4, 1, 4)
+# plt.plot(x, E, 'g-')
+# plt.ylabel('$E$',fontsize=16)
+# plt.grid(True)
+# plt.xlim(x_ini,x_fin)
+# plt.xlabel('x',fontsize=16)
+# plt.subplots_adjust(left=0.2)
+# plt.subplots_adjust(bottom=0.15)
+# plt.subplots_adjust(top=0.95)
+# #plt.show()
+# os.makedirs('ausm_results',exist_ok=True) 
+# fig.savefig(f"ausm_results4/fig_Sod_AUSM_it.png", dpi=300)
 
-        plt.subplot(4, 1, 1)
-        #plt.title('Roe scheme')
-        plt.plot(x, rho, 'k-')
-        plt.ylabel('$rho$',fontsize=16)
-        plt.tick_params(axis='x',bottom=False,labelbottom=False)
-        plt.grid(True)
 
-        plt.subplot(4, 1, 2)
-        plt.plot(x, u, 'r-')
-        plt.ylabel('$U$',fontsize=16)
-        plt.tick_params(axis='x',bottom=False,labelbottom=False)
-        plt.grid(True)
+np.save("asum_numecail_rho.npy",rho)
+np.save("asum_numecail_p.npy",p)
+np.save("asum_numecail_u.npy",u)
+plt.figure(1)
+plt.style.use("ggplot")
+plt.plot(x, rho, label="asum++")
+plt.xlabel('x',fontsize=20)
+plt.ylabel('rho',fontsize=20)
+plt.xticks(np.linspace(-1, 1, 5),fontsize=20)
+plt.yticks(fontsize=20)  
+#plt.title(title)
+plt.legend(fontsize=8)
+plt.tight_layout()
+plt.savefig(f"ausm_results4/fig_Sod_AUSM_it_rho_torch.png",dpi=600)
 
-        plt.subplot(4, 1, 3)
-        plt.plot(x, p, 'b-')
-        plt.ylabel('$p$',fontsize=16)
-        plt.tick_params(axis='x',bottom=False,labelbottom=False)
-        plt.grid(True)
-    
-        plt.subplot(4, 1, 4)
-        plt.plot(x, E, 'g-')
-        plt.ylabel('$E$',fontsize=16)
-        plt.grid(True)
-        plt.xlim(x_ini,x_fin)
-        plt.xlabel('x',fontsize=16)
-        plt.subplots_adjust(left=0.2)
-        plt.subplots_adjust(bottom=0.15)
-        plt.subplots_adjust(top=0.95)
-        #plt.show()
-        os.makedirs('ausm_results',exist_ok=True) 
-        fig.savefig(f"ausm_results/fig_Sod_AUSM_it_{it:04d}.png", dpi=300)
+
+plt.figure(2)
+plt.style.use("ggplot")
+plt.plot(x, p, label="asum++")
+plt.xlabel('x',fontsize=20)
+plt.ylabel('rho',fontsize=20)
+plt.xticks(np.linspace(-1, 1, 5),fontsize=20)
+plt.yticks(fontsize=20)  
+#plt.title(title)
+plt.legend(fontsize=8)
+plt.tight_layout()
+plt.savefig(f"ausm_results4/fig_Sod_AUSM_it_p_torch.png",dpi=600)
+
+plt.figure(3)
+plt.style.use("ggplot")
+plt.plot(x, u, label="asum++")
+plt.xlabel('x',fontsize=20)
+plt.ylabel('rho',fontsize=20)
+plt.xticks(np.linspace(-1, 1, 5),fontsize=20)
+plt.yticks(fontsize=20)  
+#plt.title(title)
+plt.legend(fontsize=8)
+plt.tight_layout()
+plt.savefig(f"ausm_results4/fig_Sod_AUSM_it_u_torch.png",dpi=600)
